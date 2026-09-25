@@ -94,23 +94,133 @@
 <body>
 <div class="app" id="app"></div>
 <div id="modalRoot"></div>
-<script>
+<script src="./firebase-config.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+
 (() => {
-  const KEY = 'sukigao9-maker-v1';
+  const KEY = 'sukigao9-maker-v2';
   const $ = (s) => document.querySelector(s);
   const app = $('#app');
   const modalRoot = $('#modalRoot');
-
+  const firebaseConfig = window.SUKIGAO_FIREBASE_CONFIG || {};
+  const firebaseConfigured = !!(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.databaseURL && firebaseConfig.projectId && firebaseConfig.appId);
+  let db = null;
+  let cloudRoomId = new URL(location.href).searchParams.get('room') || null;
+  let cloudUnsub = null;
+  let cloudSaveTimer = null;
   let state = loadLocal() || defaultState();
   let editingId = null;
+
+  if (firebaseConfigured) {
+    try {
+      const firebaseApp = initializeApp(firebaseConfig);
+      db = getDatabase(firebaseApp);
+    } catch (e) {
+      console.warn('Firebase init failed', e);
+    }
+  }
 
   function defaultState(){
     return {version:1,title:'好き顔9選',subtitle:'あなたの好きな顔を、3段階で9人にしぼろう。',candidates:[],phase:'setup',prelimIds:[],mainIds:[],finalOrder:[],prelimIndex:0,prelimSelected:[],mainSelected:[],savedAt:Date.now()};
   }
 
+  function saveLocalOnly(){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) { console.warn('local save failed', e); }
+  }
+
   function save(){
     state.savedAt = Date.now();
-    localStorage.setItem(KEY, JSON.stringify(state));
+    saveLocalOnly();
+    queueCloudSave();
+  }
+
+  function getCleanState(){
+    return JSON.parse(JSON.stringify(state));
+  }
+
+  function queueCloudSave(){
+    if(!db || !cloudRoomId) return;
+    clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = setTimeout(async ()=>{
+      try {
+        await set(ref(db, `rooms/${cloudRoomId}`), { data: getCleanState(), updatedAt: Date.now() });
+        setSyncStatus('同期済み');
+      } catch(e) {
+        console.warn('cloud save failed', e);
+        setSyncStatus('クラウド保存エラー');
+      }
+    }, 250);
+    setSyncStatus('保存中…');
+  }
+
+  function setSyncStatus(msg){
+    const el=$('#syncStatus'); if(el) el.textContent=msg;
+  }
+
+  function randomRoomId(){
+    const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-';
+    const bytes=new Uint8Array(24); crypto.getRandomValues(bytes);
+    let out=''; for(const b of bytes) out += alphabet[b % alphabet.length];
+    return out;
+  }
+
+  async function createCloudRoom(){
+    if(!db){ toast('Firebase未設定です。firebase-config.jsを設定してね'); return false; }
+    cloudRoomId=randomRoomId();
+    try {
+      await set(ref(db, `rooms/${cloudRoomId}`), { data:getCleanState(), updatedAt:Date.now() });
+      attachCloudListener();
+      const url=new URL(location.href); url.search=''; url.searchParams.set('room', cloudRoomId);
+      history.replaceState(null,'',url.toString());
+      render();
+      return true;
+    } catch(e) {
+      console.warn('room create failed', e);
+      cloudRoomId=null;
+      toast('クラウドに保存できなかったよ');
+      return false;
+    }
+  }
+
+  async function loadCloudRoom(){
+    if(!db || !cloudRoomId) return false;
+    try {
+      const snap=await get(ref(db, `rooms/${cloudRoomId}`));
+      if(!snap.exists()) return false;
+      const remote=snap.val()?.data;
+      if(remote && Array.isArray(remote.candidates)) {
+        state=normalize(remote);
+        saveLocalOnly();
+        attachCloudListener();
+        return true;
+      }
+    } catch(e) { console.warn('cloud load failed',e); }
+    return false;
+  }
+
+  function attachCloudListener(){
+    if(!db || !cloudRoomId) return;
+    if(cloudUnsub) cloudUnsub();
+    const roomRef=ref(db, `rooms/${cloudRoomId}`);
+    cloudUnsub=onValue(roomRef, snap=>{
+      const remote=snap.val()?.data;
+      if(!remote || !Array.isArray(remote.candidates)) return;
+      const remoteStamp=Number(remote.savedAt||0);
+      const localStamp=Number(state.savedAt||0);
+      if(remoteStamp < localStamp) return;
+      state=normalize(remote);
+      saveLocalOnly();
+      setSyncStatus('同期済み');
+      render();
+    });
+  }
+
+  function shareUrl(){
+    const url=new URL(location.href); url.search=''; url.hash='';
+    if(cloudRoomId) url.searchParams.set('room', cloudRoomId);
+    return url.toString();
   }
 
   function loadLocal(){
@@ -139,13 +249,15 @@
         <div class="brand"><div class="logo">9</div><div><h1>${esc(state.title)}</h1><div class="sub">${esc(state.subtitle)}</div></div></div>
         <div class="top-actions">
           <button class="btn secondary" id="shareBtn">🔗 共有URLをコピー</button>
+          <span id="syncStatus" class="sub" style="align-self:center">${firebaseConfigured ? 'Firebase接続済み' : 'Firebase未設定'}</span>
           ${state.phase!=='setup'?'<button class="btn ghost" id="settingsBtn">⚙ 候補者設定</button>':''}
         </div>
       </header>
-      ${location.protocol==='file:'?'<div class="notice">このファイルをPCで開いている間は保存はできますが、スマホと共有するには、このフォルダをGitHub PagesやNetlifyなどで公開してURLを作ってね。公開後は「共有URLをコピー」でPC→スマホへ状態を引き継げます。</div>':''}
+      ${!firebaseConfigured?'<div class="notice">☁️ PC・スマホ同期を使うには、同梱の <b>firebase-config.js</b> にFirebaseの設定を入れてください。未設定でもブラウザ内保存は使えます。</div>':''}
+      ${firebaseConfigured && !cloudRoomId?'<div class="notice">☁️ 「共有URLをコピー」を押すと共有ルームを作成します。以後はその短いURLをPC・スマホで開けば同じ内容を使えます。</div>':''}
       <div class="steps">${steps.map(([key,label])=>`<div class="step ${current===key?'active':''} ${steps.findIndex(x=>x[0]===current)>steps.findIndex(x=>x[0]===key)?'done':''}">${label}</div>`).join('')}</div>
       ${renderBody()}
-      ${state.phase!=='setup'?`<div class="share-box"><strong>端末間共有</strong><br>登録した候補者・選択状況・決勝結果はブラウザに自動保存。さらに共有URLに状態を埋め込めるので、そのURLをスマホで開けば同じ内容から続けられます。<br><code id="sharePreview">共有URLを作成するとここに表示されます</code></div>`:''}
+      ${state.phase!=='setup'?`<div class="share-box"><strong>端末間共有</strong><br>登録した候補者・画像・選択状況・決勝結果をクラウドに保存します。共有URLにはルームIDだけを入れるので、URLは短く、PC・スマホで同じ内容を開けます。<br><code id="sharePreview">共有URLを作成するとここに表示されます</code></div>`:''}
     `;
     bindCommon();
   }
@@ -268,11 +380,20 @@
 
   function bindCommon(){
     const share=async()=>{
-      const url=await makeShareUrl();
-      if(!url) return;
-      try{await navigator.clipboard.writeText(url); toast('共有URLをコピーしたよ');}catch(e){ prompt('このURLをコピーしてスマホに送ってね',url); }
+      if(!firebaseConfigured || !db){
+        toast('Firebase未設定です。firebase-config.jsを設定してね');
+        return;
+      }
+      if(!cloudRoomId){
+        const ok=await createCloudRoom();
+        if(!ok) return;
+      } else {
+        queueCloudSave();
+        await new Promise(r=>setTimeout(r,350));
+      }
+      const url=shareUrl();
+      try{await navigator.clipboard.writeText(url); toast('短い共有URLをコピーしたよ');}catch(e){ prompt('このURLをコピーしてスマホに送ってね',url); }
       const p=$('#sharePreview'); if(p) p.textContent=url;
-      history.replaceState(null,'',url);
     };
     const shareBtn=$('#shareBtn'); if(shareBtn) shareBtn.onclick=share;
     const shareBtn2=$('#shareBtn2'); if(shareBtn2) shareBtn2.onclick=share;
@@ -369,41 +490,20 @@
     $('#no').onclick=()=>modalRoot.innerHTML=''; $('#yes').onclick=()=>{modalRoot.innerHTML='';yes()};
   }
 
-  function u8ToB64(u8){let s='';const chunk=0x8000;for(let i=0;i<u8.length;i+=chunk)s+=String.fromCharCode(...u8.subarray(i,i+chunk));return btoa(s).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');}
-  function b64ToU8(s){s=s.replaceAll('-','+').replaceAll('_','/');while(s.length%4)s+='=';const bin=atob(s);const out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out;}
-  async function gzipU8(text){
-    const u8=new TextEncoder().encode(text);
-    if(!('CompressionStream' in window)) return u8ToB64(u8);
-    const cs=new CompressionStream('gzip');const writer=cs.writable.getWriter();writer.write(u8);writer.close();const ab=await new Response(cs.readable).arrayBuffer();return u8ToB64(new Uint8Array(ab));
-  }
-  async function ungzipU8(b64){
-    const raw=b64ToU8(b64);
-    if(!('DecompressionStream' in window)) return new TextDecoder().decode(raw);
-    try{const ds=new DecompressionStream('gzip');const writer=ds.writable.getWriter();writer.write(raw);writer.close();const ab=await new Response(ds.readable).arrayBuffer();return new TextDecoder().decode(ab)}catch(e){return new TextDecoder().decode(raw)}
-  }
-  async function makeShareUrl(){
-    const copy=JSON.parse(JSON.stringify(state));
-    copy.savedAt=Date.now();
-    const payload=await gzipU8(JSON.stringify(copy));
-    const url=new URL(location.href);url.hash='s='+payload;return url.toString();
-  }
-
-  async function loadFromHash(){
-    const hash=location.hash;
-    if(!hash.startsWith('#s=')) return;
-    try{
-      const data=JSON.parse(await ungzipU8(hash.slice(3)));
-      if(data && Array.isArray(data.candidates)){
-        state=normalize(data);save();
-        toast('共有URLからデータを読み込んだよ');
-        render();
+  async function initSync(){
+    if(!firebaseConfigured || !db) return;
+    if(cloudRoomId){
+      const loaded=await loadCloudRoom();
+      if(!loaded){
+        toast('共有ルームが見つからなかったよ');
+        cloudRoomId=null;
       }
-    }catch(e){ console.warn('share load failed',e); }
+    }
+    render();
   }
 
-  window.addEventListener('hashchange',loadFromHash);
   render();
-  loadFromHash();
+  initSync();
 })();
 </script>
 </body>

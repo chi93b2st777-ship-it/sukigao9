@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "rooms": {
+      "$roomId": {
+        ".read": "$roomId.matches(/^[A-Za-z0-9_-]{24}$/)",
+        ".write": "$roomId.matches(/^[A-Za-z0-9_-]{24}$/)"
+      }
+    }
+  }
+}
