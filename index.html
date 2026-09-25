@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>好き顔9選メーカー</title>
+<meta name="description" content="自分で候補者を登録して、予選→本選→決勝で好き顔9選を作るメーカー">
+<style>
+  :root{
+    --bg:#f7f6f2; --panel:#fff; --ink:#1f1f1f; --muted:#777; --line:#e4e1da;
+    --accent:#111; --soft:#f0eee8; --good:#2b7a4b; --danger:#b33a3a;
+    --shadow:0 12px 40px rgba(0,0,0,.07); --radius:20px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",Meiryo,sans-serif}
+  body{min-height:100vh}
+  button,input{font:inherit}
+  button{cursor:pointer}
+  .app{max-width:1180px;margin:0 auto;padding:18px 16px 64px}
+  header{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px;position:sticky;top:0;z-index:20;background:linear-gradient(var(--bg) 78%,transparent);padding:10px 0 16px}
+  .brand{display:flex;gap:12px;align-items:center}
+  .logo{width:42px;height:42px;border-radius:14px;background:#111;color:#fff;display:grid;place-items:center;font-weight:900;letter-spacing:-.04em}
+  h1{font-size:20px;margin:0;line-height:1.1}
+  .sub{font-size:12px;color:var(--muted);margin-top:3px}
+  .top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .btn{border:1px solid #161616;background:#161616;color:#fff;border-radius:999px;padding:10px 15px;font-weight:800}
+  .btn.secondary{background:var(--panel);color:var(--ink);border-color:var(--line)}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:transparent}
+  .btn.danger{background:#fff;color:var(--danger);border-color:#efcaca}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .notice{background:#fff9db;border:1px solid #eedc7a;padding:11px 13px;border-radius:14px;font-size:12px;color:#5c4f15;margin-bottom:16px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+  .hero{padding:28px 22px;text-align:center;margin-bottom:16px}
+  .eyebrow{font-size:11px;font-weight:900;letter-spacing:.16em;color:#888;text-transform:uppercase}
+  .hero h2{font-size:34px;letter-spacing:-.04em;margin:7px 0 8px}
+  .hero p{max-width:650px;margin:0 auto;color:#6f6f6f;line-height:1.8}
+  .hero .btn{margin-top:18px}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 16px}
+  .step{border:1px solid var(--line);background:#fbfaf7;border-radius:14px;padding:10px;text-align:center;color:#999;font-weight:800;font-size:12px}
+  .step.active{background:#111;color:#fff;border-color:#111}
+  .step.done{background:#eceae4;color:#222}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap}
+  .toolbar h3{margin:0;font-size:18px}
+  .count{font-weight:900;font-size:13px;color:#555}
+  .form-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+  .form-stack{display:grid;gap:10px}
+  .label{font-size:12px;color:#666;font-weight:800;margin-bottom:5px;display:block}
+  input[type=text]{width:100%;border:1px solid var(--line);background:#fcfbf9;border-radius:12px;padding:12px 13px;outline:none}
+  input[type=text]:focus{border-color:#999;background:#fff}
+  .upload{border:1.5px dashed #cfcac0;border-radius:15px;padding:14px;background:#faf9f6}
+  .upload input{width:100%}
+  .small{font-size:11px;color:#888;line-height:1.6;margin-top:6px}
+  .candidate-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+  .candidate{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;position:relative}
+  .candidate img{width:100%;aspect-ratio:1/1;object-fit:cover;background:#eee}
+  .candidate-info{padding:10px 11px 12px}
+  .candidate-name{font-weight:900;line-height:1.2;word-break:break-word}
+  .candidate-group{font-size:11px;color:#888;margin-top:4px;word-break:break-word}
+  .card-actions{display:flex;gap:7px;margin-top:9px}
+  .mini{flex:1;border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 8px;font-size:11px;font-weight:800}
+  .empty{padding:30px;border:1px dashed var(--line);border-radius:18px;text-align:center;color:#888}
+  .selection-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+  .pick{position:relative;border:2px solid transparent;border-radius:18px;overflow:hidden;background:#fff;padding:0;text-align:left}
+  .pick img{width:100%;aspect-ratio:1/1.05;object-fit:cover;display:block;background:#eee}
+  .pick .pick-caption{padding:9px 10px 11px}
+  .pick .pick-name{font-weight:900;font-size:14px;line-height:1.2}
+  .pick .pick-group{font-size:10px;color:#888;margin-top:4px}
+  .pick.selected{border-color:#111;box-shadow:0 0 0 3px rgba(17,17,17,.08)}
+  .check{position:absolute;right:9px;top:9px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.94);display:grid;place-items:center;font-size:16px;font-weight:900}
+  .pick.selected .check{background:#111;color:#fff}
+  .footer-actions{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap}
+  .hint{font-size:12px;color:#777}
+  .progress{height:8px;background:#eceae4;border-radius:999px;overflow:hidden;margin:12px 0 17px}
+  .progress>i{display:block;height:100%;background:#111;border-radius:999px}
+  .batch-title{display:flex;justify-content:space-between;gap:10px;align-items:end;margin-bottom:14px}
+  .batch-title h2{margin:0;font-size:28px;letter-spacing:-.035em}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:grid;place-items:center;padding:18px}
+  .modal{width:min(560px,100%);background:#fff;border-radius:22px;padding:20px;box-shadow:0 24px 80px rgba(0,0,0,.2)}
+  .modal h3{margin:0 0 8px}.modal p{color:#666;line-height:1.7;font-size:13px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  .result-wrap{max-width:760px;margin:0 auto}
+  .result-head{text-align:center;padding:26px 18px 12px}.result-head h2{font-size:34px;margin:8px 0}.result-head p{color:#777}
+  .result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:4px;overflow:hidden}
+  .result-card{position:relative;background:#eee;min-width:0}.result-card img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover}.rank{position:absolute;left:8px;top:8px;background:rgba(255,255,255,.92);border-radius:999px;padding:4px 7px;font-weight:900;font-size:11px}
+  .result-caption{padding:8px 8px 10px;background:#fff}.result-caption strong{display:block;font-size:12px}.result-caption span{display:block;color:#888;font-size:10px;margin-top:3px}
+  .reorder{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+  .reorder-item{border:1px solid var(--line);border-radius:12px;padding:9px;background:#fff;display:flex;align-items:center;gap:8px}.reorder-item .num{font-size:11px;font-weight:900}.reorder-item .txt{min-width:0;flex:1;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.reorder-item button{border:1px solid var(--line);background:#fafafa;border-radius:8px;padding:5px 7px;font-size:11px}
+  .share-box{margin-top:16px;background:#f5f3ee;border:1px solid var(--line);border-radius:15px;padding:13px;font-size:12px;line-height:1.7}
+  .share-box code{display:block;margin-top:8px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;overflow:auto;white-space:nowrap;font-size:10px}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 14px;border-radius:999px;font-size:12px;font-weight:800;z-index:90;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+  @media (max-width:980px){.candidate-list{grid-template-columns:repeat(3,1fr)}.selection-grid{grid-template-columns:repeat(4,1fr)}.form-grid{grid-template-columns:1fr}}
+  @media (max-width:680px){.app{padding:12px 10px 48px}.top-actions .btn{padding:8px 11px;font-size:12px}.hero h2{font-size:28px}.steps{grid-template-columns:repeat(4,1fr);gap:5px}.step{font-size:10px;padding:8px 5px}.candidate-list{grid-template-columns:repeat(2,1fr);gap:10px}.selection-grid{grid-template-columns:repeat(2,1fr);gap:10px}.panel{padding:15px;border-radius:16px}.reorder{grid-template-columns:1fr}.result-head h2{font-size:28px}.result-grid{gap:3px}}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div id="modalRoot"></div>
+<script>
+(() => {
+  const KEY = 'sukigao9-maker-v1';
+  const $ = (s) => document.querySelector(s);
+  const app = $('#app');
+  const modalRoot = $('#modalRoot');
+
+  let state = loadLocal() || defaultState();
+  let editingId = null;
+
+  function defaultState(){
+    return {version:1,title:'好き顔9選',subtitle:'あなたの好きな顔を、3段階で9人にしぼろう。',candidates:[],phase:'setup',prelimIds:[],mainIds:[],finalOrder:[],prelimIndex:0,prelimSelected:[],mainSelected:[],savedAt:Date.now()};
+  }
+
+  function save(){
+    state.savedAt = Date.now();
+    localStorage.setItem(KEY, JSON.stringify(state));
+  }
+
+  function loadLocal(){
+    try { const raw=localStorage.getItem(KEY); return raw?normalize(JSON.parse(raw)):null; } catch(e){ return null; }
+  }
+
+  function normalize(x){
+    const d=defaultState();
+    return Object.assign(d,x,{candidates:Array.isArray(x.candidates)?x.candidates:[],prelimIds:Array.isArray(x.prelimIds)?x.prelimIds:[],mainIds:Array.isArray(x.mainIds)?x.mainIds:[],finalOrder:Array.isArray(x.finalOrder)?x.finalOrder:[],prelimSelected:Array.isArray(x.prelimSelected)?x.prelimSelected:[],mainSelected:Array.isArray(x.mainSelected)?x.mainSelected:[]});
+  }
+
+  function esc(s){ return String(s??'').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+  function findCandidate(id){ return state.candidates.find(c=>c.id===id); }
+
+  function placeholderData(name='No Image'){
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="100%" height="100%" fill="#ece9e2"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="34" fill="#999">${esc(name).slice(0,20)}</text></svg>`;
+    return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg);
+  }
+
+  function render(){
+    const steps=[['setup','登録'],['prelim','予選'],['main','本選'],['final','決勝']];
+    const current=state.phase==='result'?'final':state.phase;
+    app.innerHTML=`
+      <header>
+        <div class="brand"><div class="logo">9</div><div><h1>${esc(state.title)}</h1><div class="sub">${esc(state.subtitle)}</div></div></div>
+        <div class="top-actions">
+          <button class="btn secondary" id="shareBtn">🔗 共有URLをコピー</button>
+          ${state.phase!=='setup'?'<button class="btn ghost" id="settingsBtn">⚙ 候補者設定</button>':''}
+        </div>
+      </header>
+      ${location.protocol==='file:'?'<div class="notice">このファイルをPCで開いている間は保存はできますが、スマホと共有するには、このフォルダをGitHub PagesやNetlifyなどで公開してURLを作ってね。公開後は「共有URLをコピー」でPC→スマホへ状態を引き継げます。</div>':''}
+      <div class="steps">${steps.map(([key,label])=>`<div class="step ${current===key?'active':''} ${steps.findIndex(x=>x[0]===current)>steps.findIndex(x=>x[0]===key)?'done':''}">${label}</div>`).join('')}</div>
+      ${renderBody()}
+      ${state.phase!=='setup'?`<div class="share-box"><strong>端末間共有</strong><br>登録した候補者・選択状況・決勝結果はブラウザに自動保存。さらに共有URLに状態を埋め込めるので、そのURLをスマホで開けば同じ内容から続けられます。<br><code id="sharePreview">共有URLを作成するとここに表示されます</code></div>`:''}
+    `;
+    bindCommon();
+  }
+
+  function renderBody(){
+    if(state.phase==='setup') return renderSetup();
+    if(state.phase==='prelim') return renderPrelim();
+    if(state.phase==='main') return renderMain();
+    if(state.phase==='final') return renderFinal();
+    return renderResult();
+  }
+
+  function renderSetup(){
+    const count=state.candidates.length;
+    return `
+      <section class="panel hero">
+        <div class="eyebrow">SUKIGAO 9 MAKER</div>
+        <h2>好きな顔、9人にしぼろう。</h2>
+        <p>候補者の画像・名前・グループ名を自分で登録。<br>予選 → 本選 → 決勝の3段階で、最後に3×3の「好き顔9選」を作れます。</p>
+        <button class="btn" id="startBtn" ${count<2?'disabled':''}>候補者 ${count}人でスタート</button>
+      </section>
+      <section class="panel">
+        <div class="toolbar"><h3>候補者を登録</h3><div class="count">${count}人</div></div>
+        <div class="form-grid">
+          <div class="form-stack">
+            <div><label class="label">名前</label><input type="text" id="nameInput" placeholder="例：イハン"></div>
+            <div><label class="label">グループ名</label><input type="text" id="groupInput" placeholder="例：BOYNEXTDOOR"></div>
+            <button class="btn" id="addCandidateBtn">＋ 候補者を追加</button>
+          </div>
+          <div class="upload"><label class="label">顔写真</label><input type="file" id="imageInput" accept="image/*"><div class="small">画像はブラウザ内で自動的に小さくして保存します。共有URLに載せるため、元画像より軽いサイズになります。</div></div>
+        </div>
+        ${count?`<div class="candidate-list">${state.candidates.map(c=>candidateAdminCard(c)).join('')}</div>`:'<div class="empty" style="margin-top:16px">まだ候補者がいません。名前・グループ名・画像を入れて追加してね。</div>'}
+      </section>`;
+  }
+
+  function candidateAdminCard(c){
+    return `<article class="candidate"><img src="${c.image||placeholderData(c.name)}" alt=""><div class="candidate-info"><div class="candidate-name">${esc(c.name)}</div><div class="candidate-group">${esc(c.group||'')}</div><div class="card-actions"><button class="mini" data-edit="${c.id}">編集</button><button class="mini" data-delete="${c.id}">削除</button></div></div></article>`;
+  }
+
+  function idsForPrelim(){
+    return state.candidates.map(c=>c.id);
+  }
+
+  function renderPrelim(){
+    const all=state.prelimIds.length?state.prelimIds:idsForPrelim();
+    const size=6;
+    const total=Math.max(1,Math.ceil(all.length/size));
+    const idx=Math.min(state.prelimIndex,total-1);
+    const ids=all.slice(idx*size,(idx+1)*size);
+    const picked=new Set(state.prelimSelected);
+    return `<section class="panel">
+      <div class="batch-title"><div><div class="eyebrow">PRELIMINARY</div><h2>予選</h2></div><div class="count">${idx+1} / ${total} ｜ ${picked.size}人選択中</div></div>
+      <p class="hint">この中で「顔が好き！」と思う人を複数選択。予選はスキップして、登録した全員を本選候補にすることもできます。</p>
+      <div class="progress"><i style="width:${((idx+1)/total)*100}%"></i></div>
+      <div class="selection-grid">${ids.map(id=>pickCard(findCandidate(id),picked.has(id),'prelim')).join('')}</div>
+      <div class="footer-actions"><button class="btn secondary" id="skipPrelimBtn">予選をスキップ</button><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn secondary" id="prevPrelimBtn" ${idx===0?'disabled':''}>← 前へ</button><button class="btn" id="nextPrelimBtn">${idx===total-1?'選択を確定して本選へ':'次へ →'}</button></div></div>
+    </section>`;
+  }
+
+  function renderMain(){
+    const ids=state.mainIds.length?state.mainIds:state.prelimIds;
+    const picked=new Set(state.mainSelected);
+    const count=picked.size;
+    return `<section class="panel">
+      <div class="toolbar"><div><div class="eyebrow">MAIN</div><h2 style="margin:6px 0 0">本選</h2></div><div class="count">${count}人選択中</div></div>
+      <p class="hint">予選で選んだ人たちがここに表示されます。予選をスキップした場合は登録した全員が対象。<b>本選はスキップできません。</b> 少なくとも2人を選んでください。決勝は9人を選ぶので、最終的に9人以上を残します。</p>
+      <div class="selection-grid" style="margin-top:16px">${ids.map(id=>pickCard(findCandidate(id),picked.has(id),'main')).join('')}</div>
+      <div class="footer-actions"><button class="btn secondary" id="backToPrelimBtn">← 予選へ戻る</button><button class="btn" id="mainFinishBtn" ${count<2?'disabled':''}>${count<9?'あと'+(9-count)+'人選んで決勝へ':'本選を確定して決勝へ'}</button></div>
+      ${count>0&&count<9?`<div class="notice" style="margin-top:14px;margin-bottom:0">今は${count}人。決勝で9人にするため、あと${9-count}人以上を本選に残してね。</div>`:''}
+    </section>`;
+  }
+
+  function renderFinal(){
+    const ids=state.mainIds.filter(id=>state.mainSelected.includes(id));
+    const selected=new Set(state.finalOrder);
+    return `<section class="panel">
+      <div class="toolbar"><div><div class="eyebrow">FINAL</div><h2 style="margin:6px 0 0">決勝</h2></div><div class="count">${selected.size} / 9人</div></div>
+      <p class="hint">本選で残した人から、最終的に9人を選択。<b>9人になるまで確定できません。</b> 選んだ順番が1〜9の並びになります。</p>
+      <div class="selection-grid" style="margin-top:16px">${ids.map(id=>pickCard(findCandidate(id),selected.has(id),'final')).join('')}</div>
+      <div class="footer-actions"><button class="btn secondary" id="backToMainBtn">← 本選へ戻る</button><button class="btn" id="finalFinishBtn" ${selected.size!==9?'disabled':''}>9人を確定して結果を見る</button></div>
+    </section>`;
+  }
+
+  function renderResult(){
+    const result=state.finalOrder.map(id=>findCandidate(id)).filter(Boolean);
+    return `<section class="result-wrap">
+      <div class="result-head"><div class="eyebrow">YOUR SUKIGAO 9</div><h2>${esc(state.title)}</h2><p>あなたが選んだ9人</p></div>
+      <div class="result-grid">${result.map((c,i)=>`<div class="result-card"><div class="rank">${i+1}</div><img src="${c.image||placeholderData(c.name)}" alt=""><div class="result-caption"><strong>${esc(c.name)}</strong><span>${esc(c.group||'')}</span></div></div>`).join('')}</div>
+      <div class="reorder">${result.map((c,i)=>`<div class="reorder-item"><span class="num">${i+1}</span><span class="txt">${esc(c.name)}</span><button data-move="up" data-idx="${i}" ${i===0?'disabled':''}>↑</button><button data-move="down" data-idx="${i}" ${i===result.length-1?'disabled':''}>↓</button></div>`).join('')}</div>
+      <div class="footer-actions" style="margin-top:16px"><button class="btn secondary" id="editResultBtn">← 決勝へ戻る</button><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn secondary" id="copyResultBtn">結果をコピー</button><button class="btn" id="shareBtn2">🔗 共有URLをコピー</button></div></div>
+    </section>`;
+  }
+
+  function pickCard(c, selected, phase){
+    if(!c) return '';
+    return `<button class="pick ${selected?'selected':''}" data-pick="${phase}" data-id="${c.id}"><img src="${c.image||placeholderData(c.name)}" alt=""><span class="check">${selected?'✓':''}</span><div class="pick-caption"><div class="pick-name">${esc(c.name)}</div><div class="pick-group">${esc(c.group||'')}</div></div></button>`;
+  }
+
+  async function compressImage(file){
+    return new Promise((resolve,reject)=>{
+      const img=new Image();
+      const fr=new FileReader();
+      fr.onload=()=>{img.src=fr.result};
+      fr.onerror=reject; img.onerror=reject;
+      img.onload=()=>{
+        const maxW=420,maxH=420;
+        const ratio=Math.min(1,maxW/img.width,maxH/img.height);
+        const canvas=document.createElement('canvas');
+        canvas.width=Math.max(1,Math.round(img.width*ratio));
+        canvas.height=Math.max(1,Math.round(img.height*ratio));
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        let out=canvas.toDataURL('image/webp',0.70);
+        if(out.length<20) out=canvas.toDataURL('image/jpeg',0.72);
+        resolve(out);
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+
+  function bindCommon(){
+    const share=async()=>{
+      const url=await makeShareUrl();
+      if(!url) return;
+      try{await navigator.clipboard.writeText(url); toast('共有URLをコピーしたよ');}catch(e){ prompt('このURLをコピーしてスマホに送ってね',url); }
+      const p=$('#sharePreview'); if(p) p.textContent=url;
+      history.replaceState(null,'',url);
+    };
+    const shareBtn=$('#shareBtn'); if(shareBtn) shareBtn.onclick=share;
+    const shareBtn2=$('#shareBtn2'); if(shareBtn2) shareBtn2.onclick=share;
+    const settings=$('#settingsBtn'); if(settings) settings.onclick=()=>{ state.phase='setup'; save(); render(); };
+
+    const start=$('#startBtn'); if(start) start.onclick=()=>{
+      state.phase='prelim'; state.prelimIds=shuffle(idsForPrelim()); state.prelimIndex=0; state.prelimSelected=[]; state.mainSelected=[]; state.finalOrder=[]; save(); render();
+    };
+    const add=$('#addCandidateBtn'); if(add) add.onclick=addCandidate;
+    document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editCandidate(b.dataset.edit));
+    document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteCandidate(b.dataset.delete));
+    document.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>togglePick(b.dataset.pick,b.dataset.id));
+    const skip=$('#skipPrelimBtn'); if(skip) skip.onclick=()=>{ state.mainIds=idsForPrelim(); state.mainSelected=[]; state.phase='main'; save(); render(); };
+    const prev=$('#prevPrelimBtn'); if(prev) prev.onclick=()=>{state.prelimIndex=Math.max(0,state.prelimIndex-1);save();render()};
+    const next=$('#nextPrelimBtn'); if(next) next.onclick=nextPrelim;
+    const backP=$('#backToPrelimBtn'); if(backP) backP.onclick=()=>{state.phase='prelim';save();render()};
+    const mainFinish=$('#mainFinishBtn'); if(mainFinish) mainFinish.onclick=()=>{ if(state.mainSelected.length<9){toast('決勝に進むには9人以上を本選に残してね'); return;} state.phase='final';state.finalOrder=state.mainSelected.filter(id=>state.mainIds.includes(id)).slice(0,9);save();render() };
+    const backM=$('#backToMainBtn'); if(backM) backM.onclick=()=>{state.phase='main';save();render()};
+    const fin=$('#finalFinishBtn'); if(fin) fin.onclick=()=>{state.phase='result';save();render()};
+    const editR=$('#editResultBtn'); if(editR) editR.onclick=()=>{state.phase='final';save();render()};
+    const copyR=$('#copyResultBtn'); if(copyR) copyR.onclick=()=>copyResult();
+    document.querySelectorAll('[data-move]').forEach(b=>b.onclick=()=>moveResult(Number(b.dataset.idx),b.dataset.move));
+  }
+
+  async function addCandidate(){
+    const name=$('#nameInput').value.trim();
+    const group=$('#groupInput').value.trim();
+    const file=$('#imageInput').files[0];
+    if(!name){toast('名前を入れてね');return}
+    if(editingId){
+      const c=findCandidate(editingId); if(!c) return;
+      c.name=name;c.group=group||'';
+      if(file) c.image=await compressImage(file);
+      editingId=null; $('#addCandidateBtn').textContent='＋ 候補者を追加'; toast('候補者を更新したよ');
+    } else {
+      state.candidates.push({id:crypto.randomUUID(),name,group,image:file?await compressImage(file):placeholderData(name)});
+      toast('候補者を追加したよ');
+    }
+    $('#nameInput').value=''; $('#groupInput').value=''; $('#imageInput').value='';
+    save();render();
+  }
+
+  function editCandidate(id){
+    const c=findCandidate(id); if(!c) return;
+    editingId=id; state.phase='setup';
+    render(); $('#nameInput').value=c.name; $('#groupInput').value=c.group||''; $('#addCandidateBtn').textContent='✓ 候補者を更新'; window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+  }
+
+  function deleteCandidate(id){
+    const c=findCandidate(id); if(!c) return;
+    confirmModal(`「${c.name}」を削除しますか？`, '削除すると予選・本選・決勝の候補からも外れます。', ()=>{
+      state.candidates=state.candidates.filter(x=>x.id!==id); state.prelimIds=state.prelimIds.filter(x=>x!==id); state.mainIds=state.mainIds.filter(x=>x!==id); state.prelimSelected=state.prelimSelected.filter(x=>x!==id); state.mainSelected=state.mainSelected.filter(x=>x!==id); state.finalOrder=state.finalOrder.filter(x=>x!==id); save();render();toast('削除したよ');
+    });
+  }
+
+  function nextPrelim(){
+    const all=state.prelimIds.length?state.prelimIds:idsForPrelim();
+    const total=Math.max(1,Math.ceil(all.length/6));
+    if(state.prelimIndex<total-1){state.prelimIndex++;save();render();return;}
+    if(state.prelimSelected.length<2){toast('予選を終えるなら2人以上選んでね。予選はスキップもできるよ。');return}
+    state.mainIds=state.prelimIds.filter(id=>state.prelimSelected.includes(id));
+    state.mainSelected=[];state.phase='main';save();render();
+  }
+
+  function togglePick(phase,id){
+    let arr=phase==='prelim'?state.prelimSelected:phase==='main'?state.mainSelected:state.finalOrder;
+    const i=arr.indexOf(id);
+    if(i>=0) arr.splice(i,1); else arr.push(id);
+    save();render();
+  }
+
+  function moveResult(idx,dir){
+    const j=dir==='up'?idx-1:idx+1;
+    if(j<0||j>=state.finalOrder.length)return;
+    [state.finalOrder[idx],state.finalOrder[j]]=[state.finalOrder[j],state.finalOrder[idx]];save();render();
+  }
+
+  async function copyResult(){
+    const text=state.finalOrder.map((id,i)=>{const c=findCandidate(id);return `${i+1}. ${c?c.name:''}${c?.group?'｜'+c.group:''}`}).join('\n');
+    try{await navigator.clipboard.writeText(text);toast('結果をコピーしたよ');}catch(e){prompt('結果',text)}
+  }
+
+  function shuffle(arr){
+    const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;
+  }
+
+  function toast(msg){
+    const old=document.querySelector('.toast');if(old)old.remove();
+    const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),1800);
+  }
+
+  function confirmModal(title,body,yes){
+    modalRoot.innerHTML=`<div class="modal-backdrop"><div class="modal"><h3>${esc(title)}</h3><p>${esc(body)}</p><div class="modal-actions"><button class="btn secondary" id="no">キャンセル</button><button class="btn danger" id="yes">削除する</button></div></div></div>`;
+    $('#no').onclick=()=>modalRoot.innerHTML=''; $('#yes').onclick=()=>{modalRoot.innerHTML='';yes()};
+  }
+
+  function u8ToB64(u8){let s='';const chunk=0x8000;for(let i=0;i<u8.length;i+=chunk)s+=String.fromCharCode(...u8.subarray(i,i+chunk));return btoa(s).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');}
+  function b64ToU8(s){s=s.replaceAll('-','+').replaceAll('_','/');while(s.length%4)s+='=';const bin=atob(s);const out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out;}
+  async function gzipU8(text){
+    const u8=new TextEncoder().encode(text);
+    if(!('CompressionStream' in window)) return u8ToB64(u8);
+    const cs=new CompressionStream('gzip');const writer=cs.writable.getWriter();writer.write(u8);writer.close();const ab=await new Response(cs.readable).arrayBuffer();return u8ToB64(new Uint8Array(ab));
+  }
+  async function ungzipU8(b64){
+    const raw=b64ToU8(b64);
+    if(!('DecompressionStream' in window)) return new TextDecoder().decode(raw);
+    try{const ds=new DecompressionStream('gzip');const writer=ds.writable.getWriter();writer.write(raw);writer.close();const ab=await new Response(ds.readable).arrayBuffer();return new TextDecoder().decode(ab)}catch(e){return new TextDecoder().decode(raw)}
+  }
+  async function makeShareUrl(){
+    const copy=JSON.parse(JSON.stringify(state));
+    copy.savedAt=Date.now();
+    const payload=await gzipU8(JSON.stringify(copy));
+    const url=new URL(location.href);url.hash='s='+payload;return url.toString();
+  }
+
+  async function loadFromHash(){
+    const hash=location.hash;
+    if(!hash.startsWith('#s=')) return;
+    try{
+      const data=JSON.parse(await ungzipU8(hash.slice(3)));
+      if(data && Array.isArray(data.candidates)){
+        state=normalize(data);save();
+        toast('共有URLからデータを読み込んだよ');
+        render();
+      }
+    }catch(e){ console.warn('share load failed',e); }
+  }
+
+  window.addEventListener('hashchange',loadFromHash);
+  render();
+  loadFromHash();
+})();
+</script>
+</body>
+</html>
